@@ -6,7 +6,7 @@
 [![MCP](https://img.shields.io/badge/MCP-SDK-blueviolet)](https://modelcontextprotocol.io/)
 [![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
 
-A TypeScript MCP server that lets Hermes control local Cursor IDE windows through Chrome DevTools Protocol (CDP).
+A TypeScript MCP server that lets Hermes and OpenClaw agents control local Cursor IDE windows through Chrome DevTools Protocol (CDP).
 
 ## Why this project
 
@@ -19,6 +19,8 @@ Keep Hermes as the orchestrator, and treat Cursor as a controllable local execut
 - inspect confirmations safely
 
 No Telegram, no voice stack, no cloud relay.
+
+With this MCP bridge, external agents like Hermes and OpenClaw can connect to Cursor running on your machine and execute real development workflows through Cursor chats.
 
 ## System Diagram
 
@@ -74,7 +76,7 @@ Experimental and local-first. Cursor internal DOM selectors are not a stable pub
 - Node.js 20+
 - Cursor installed locally
 - Cursor launched with a remote debugging port
-- MCP-compatible client (Hermes)
+- MCP-compatible client (Hermes, OpenClaw, or equivalent)
 
 ## Quick Start
 
@@ -99,7 +101,7 @@ npm start
 npm run dev
 ```
 
-## Hermes MCP Configuration
+## Hermes / OpenClaw MCP Configuration
 
 See `examples/mcp.cursor.example.json`.
 

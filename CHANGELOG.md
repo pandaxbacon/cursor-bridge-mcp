@@ -10,6 +10,7 @@ and this project adheres to Semantic Versioning.
 ### Changed
 
 - Refreshed `README.md` with visual badges, GitHub-compatible Mermaid diagrams, and a more concise quick-start oriented layout.
+- Clarified in `README.md` that Hermes and OpenClaw-style MCP agents can connect to local Cursor and perform development workflows through this bridge.
 
 ## [0.1.0] - 2026-05-13
 
