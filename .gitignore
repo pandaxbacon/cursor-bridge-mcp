@@ -5,3 +5,4 @@ cursor-bridge.config.json
 coverage
 logs
 *.log
+.DS_Store
