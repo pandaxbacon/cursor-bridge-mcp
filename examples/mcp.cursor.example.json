@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "cursor-bridge": {
+      "command": "node",
+      "args": ["/absolute/path/to/cursor-bridge-mcp/dist/index.js"],
+      "env": {
+        "CURSOR_CDP_PORT": "9222"
+      }
+    }
+  }
+}

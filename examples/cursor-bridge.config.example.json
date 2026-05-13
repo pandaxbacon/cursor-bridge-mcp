@@ -1,0 +1,19 @@
+{
+  "defaultPort": 9222,
+  "aliases": {
+    "loyalty-api": {
+      "workspacePath": "/Users/me/work/loyalty-api"
+    },
+    "aem-game": {
+      "workspacePath": "/Users/me/work/aem-game"
+    }
+  },
+  "safety": {
+    "allowSelfControl": false,
+    "confirmationActions": {
+      "allowAcceptForLowRisk": true,
+      "allowAcceptForMediumRisk": false,
+      "allowAcceptForHighRisk": false
+    }
+  }
+}

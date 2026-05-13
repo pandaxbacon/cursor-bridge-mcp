@@ -1,0 +1,7 @@
+node_modules
+dist
+.env
+cursor-bridge.config.json
+coverage
+logs
+*.log
