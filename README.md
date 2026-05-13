@@ -1,79 +1,107 @@
 # Cursor Bridge MCP
 
-A TypeScript MCP server that lets Hermes control local Cursor IDE windows through CDP.
+[![Status](https://img.shields.io/badge/status-experimental-orange)](https://github.com/pandaxbacon/cursor-bridge-mcp)
+[![Node](https://img.shields.io/badge/node-%3E%3D20-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![MCP](https://img.shields.io/badge/MCP-SDK-blueviolet)](https://modelcontextprotocol.io/)
+[![License](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
+
+A TypeScript MCP server that lets Hermes control local Cursor IDE windows through Chrome DevTools Protocol (CDP).
+
+## Why this project
+
+Keep Hermes as the orchestrator, and treat Cursor as a controllable local execution UI:
+
+- discover open Cursor windows/workspaces
+- target one specific window/chat
+- send prompts
+- read and wait for responses
+- inspect confirmations safely
+
+No Telegram, no voice stack, no cloud relay.
+
+## System Diagram
+
+```mermaid
+flowchart LR
+  H[Hermes Agent] --> MC[MCP Client]
+  MC --> CB[cursor-bridge-mcp<br/>TypeScript Server]
+  CB --> CDP[CDP WebSocket]
+  CDP --> C1[Cursor Window A]
+  CDP --> C2[Cursor Window B]
+  CDP --> C3[Cursor Window N]
+```
+
+## Request Flow Diagram
+
+```mermaid
+sequenceDiagram
+  participant H as Hermes
+  participant B as cursor-bridge-mcp
+  participant C as Cursor Window
+
+  H->>B: cursor_send_message(target, text, submit=true)
+  B->>C: focus input + insert text + submit
+  B-->>H: operationId + status
+  H->>B: cursor_wait_for_response(target, timeout, quietPeriod)
+  B->>C: poll DOM for stable latest turn
+  B-->>H: structured latest turn
+```
 
 ## Status
 
-Experimental. Built for local automation and relies on Cursor internal DOM selectors that may break across Cursor releases.
+Experimental and local-first. Cursor internal DOM selectors are not a stable public API and may change between Cursor versions.
 
-## Architecture
+## Core Features
 
-Hermes -> MCP client -> `cursor-bridge-mcp` -> CDP WebSocket -> local Cursor windows/workspaces/chats
-
-This server is designed for **external control** of Cursor windows (Hermes controls Cursor). It is not intended for self-referential control by the same Cursor instance.
-
-## Features
-
-- List Cursor windows/targets from CDP
-- Target a specific workspace/window by `targetId`, alias, workspace path, or title fallback
-- Send a message to Cursor chat (insert + optional submit)
-- Read latest AI turn (assistant/user/thinking/tool summary/code blocks/files)
-- Wait for response stabilization with timeout/quiet period
-- List and select chats where detectable
-- Detect confirmation prompts and risk-score them
-- Explicit accept/reject actions for confirmations
+- Multi-window discovery and targeting (`targetId`, alias, workspace path, title fallback)
+- Chat tools: list chats, select chat, send message, fetch latest turn, wait for response
+- Confirmation visibility + explicit action handling (no silent destructive acceptance)
 - Screenshot support via CDP
-- Workspace aliases via `cursor-bridge.config.json`
-- Health checks (CDP reachability, target discovery, selector diagnostics)
+- Health checks for CDP reachability and selector diagnostics
+- Workspace aliasing via `cursor-bridge.config.json`
 
 ## Non-goals
 
 - Telegram bot integration
-- Voice, transcription, TTS
-- Cloud-hosted bridge service
-- Bypassing Cursor security or safeguards
-- Silently accepting destructive actions
+- Voice/transcription/TTS
+- Cloud-hosted relay service
+- Security bypasses in Cursor
+- Auto-accepting destructive actions
 
 ## Requirements
 
-- Node.js 20+ (tested with modern Node LTS)
+- Node.js 20+
 - Cursor installed locally
 - Cursor launched with a remote debugging port
-- GitHub CLI (`gh`) only for repository setup workflows
 - MCP-compatible client (Hermes)
 
-## Installation
+## Quick Start
+
+### 1) Install and build
 
 ```bash
 npm install
 npm run build
 ```
 
-## Run Cursor with CDP
+### 2) Launch Cursor with CDP enabled
 
 ```bash
 cursor --remote-debugging-port=9222 --remote-allow-origins=http://localhost:9222
 ```
 
-Default port is `9222`, overridable via:
-
-- `CURSOR_CDP_PORT`
-- tool-level `target.port`
-- `cursor-bridge.config.json` (`defaultPort`)
-
-## Running the MCP server
+### 3) Run the MCP server
 
 ```bash
+npm start
+# or during development
 npm run dev
-# or
-npm run build && npm start
 ```
 
-Uses MCP stdio transport first. The codebase is organized so streamable HTTP/SSE transport can be added later.
+## Hermes MCP Configuration
 
-## MCP configuration example
-
-See `examples/mcp.cursor.example.json`:
+See `examples/mcp.cursor.example.json`.
 
 ```json
 {
@@ -89,7 +117,7 @@ See `examples/mcp.cursor.example.json`:
 }
 ```
 
-## Example Hermes tool usage
+## Example Tool Calls
 
 ```json
 {
@@ -102,7 +130,9 @@ See `examples/mcp.cursor.example.json`:
 {
   "name": "cursor_send_message",
   "arguments": {
-    "target": { "workspaceAlias": "loyalty-api" },
+    "target": {
+      "workspaceAlias": "loyalty-api"
+    },
     "text": "Please run tests and summarize failures.",
     "submit": true
   }
@@ -113,23 +143,35 @@ See `examples/mcp.cursor.example.json`:
 {
   "name": "cursor_wait_for_response",
   "arguments": {
-    "target": { "workspaceAlias": "loyalty-api" },
+    "target": {
+      "workspaceAlias": "loyalty-api"
+    },
     "timeoutMs": 120000,
     "quietPeriodMs": 4000
   }
 }
 ```
 
-## Config file
+## Config: `cursor-bridge.config.json`
 
-Create `cursor-bridge.config.json` in project root (local-only, ignored by git):
+Default CDP port is `9222`. You can override with:
+
+- `CURSOR_CDP_PORT`
+- per-tool `target.port`
+- config file `defaultPort`
+
+Example:
 
 ```json
 {
   "defaultPort": 9222,
   "aliases": {
-    "loyalty-api": { "workspacePath": "/Users/me/work/loyalty-api" },
-    "aem-game": { "workspacePath": "/Users/me/work/aem-game" }
+    "loyalty-api": {
+      "workspacePath": "/Users/me/work/loyalty-api"
+    },
+    "aem-game": {
+      "workspacePath": "/Users/me/work/aem-game"
+    }
   },
   "safety": {
     "allowSelfControl": false,
@@ -142,7 +184,7 @@ Create `cursor-bridge.config.json` in project root (local-only, ignored by git):
 }
 ```
 
-## MCP tools
+## MCP Tools
 
 - `cursor_list_windows`
 - `cursor_describe_window`
@@ -156,23 +198,22 @@ Create `cursor-bridge.config.json` in project root (local-only, ignored by git):
 - `cursor_act_on_confirmation`
 - `cursor_health_check`
 
-## Safety model
+## Safety Model
 
-- Hermes is the controller, Cursor is the controlled target.
-- Avoid using this MCP server in the same Cursor instance it controls.
-- Send and read are separate operations (`cursor_send_message` vs `cursor_wait_for_response`).
-- Response waits are timeout-bounded.
-- Per-target operation locks prevent overlapping send operations in the same target/chat.
-- Confirmation actions are explicit and policy-gated; destructive accepts are blocked by default.
+- Hermes is the controller; Cursor is the controlled target.
+- Avoid controlling the same Cursor instance hosting this MCP server workflow.
+- Send/read are separate APIs (`cursor_send_message` vs `cursor_wait_for_response`).
+- Wait operations are strictly timeout-bounded.
+- Per-target operation locks prevent overlapping sends in the same chat path.
+- Confirmation actions must be explicit and are policy-gated by risk level.
 
 ## Troubleshooting
 
-- **CDP port not open**: launch Cursor with remote debugging flags.
-- **No targets found**: verify Cursor is running and check `http://localhost:9222/json`.
-- **Selectors broke after Cursor update**: run `cursor_health_check`, then update `src/cursor/CursorSelectors.ts`.
-- **Message inserted but not submitted**: set `submit: true`; if UI changed, verify send button selectors.
-- **Multiple windows detected**: target by `targetId` or workspace alias to avoid ambiguity.
-- **`remote-allow-origins` issue**: include `--remote-allow-origins=http://localhost:9222` in Cursor launch.
+- **CDP port closed**: start Cursor with remote debugging flags.
+- **No windows listed**: verify `http://localhost:9222/json` responds.
+- **Selectors broken after Cursor update**: run `cursor_health_check`, then adjust `src/cursor/CursorSelectors.ts`.
+- **Text inserted but not submitted**: ensure `submit: true`; verify send-button selector compatibility.
+- **Ambiguous target**: specify `targetId` or configure workspace aliases.
 
 ## Testing
 
@@ -186,7 +227,7 @@ Integration tests are opt-in and non-destructive by default:
 RUN_CURSOR_INTEGRATION=1 npm run test:integration
 ```
 
-## Development scripts
+## Development Scripts
 
 - `npm run build`
 - `npm run dev`
